@@ -2,10 +2,12 @@ package kr.kro.airbob.common.exception;
 
 import java.util.stream.Collectors;
 
+import kr.kro.airbob.common.lock.exception.LockAcquisitionFailedException;
 import kr.kro.airbob.domain.accommodation.exception.AccommodationNotFoundException;
 import kr.kro.airbob.domain.reservation.exception.AlreadyReservedException;
 import kr.kro.airbob.domain.auth.exception.NotEqualHostException;
 import kr.kro.airbob.domain.member.exception.DuplicatedEmailException;
+import kr.kro.airbob.domain.reservation.exception.InvalidReservationDateException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -58,12 +60,12 @@ public class GlobalExceptionHandler {
 			.build();
 	}
 
-	@ExceptionHandler(AlreadyReservedException.class)
-	public ResponseEntity<Void> handleAlreadyReservedException(AlreadyReservedException e) {
-		log.error("AlreadyReservedException: {}", e.getMessage());
+	@ExceptionHandler({AlreadyReservedException.class, LockAcquisitionFailedException.class})
+	public ResponseEntity<String> handleAlreadyReservedException(Exception e) {
+		log.error("Exception: {}, {}",e, e.getMessage());
 		return ResponseEntity
 				.status(HttpStatus.CONFLICT)
-				.build();
+				.body(e.getMessage());
 	}
 
 	@ExceptionHandler(WishlistNotFoundException.class)
@@ -85,8 +87,8 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 	}
 
-	@ExceptionHandler(CursorPageSizeException.class)
-	public ResponseEntity<Void> handleCursorPageSizeException(CursorPageSizeException e) {
+	@ExceptionHandler({CursorPageSizeException.class, InvalidReservationDateException.class})
+	public ResponseEntity<Void> handleCursorPageSizeException(Exception e) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 	}
 

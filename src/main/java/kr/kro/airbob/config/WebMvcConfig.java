@@ -57,7 +57,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
 		bean.addUrlPatterns("/api/accommodations", "/api/accommodations/*",
 			"/api/accommodations/*/reviews", "/api/accommodations/*/reviews/*",
 			"/api/members/wishlists", "/api/members/wishlists/*",
-			"/api/members/recentlyViewed", "/api/members/recentlyViewed/*");
+			"/api/members/recentlyViewed", "/api/members/recentlyViewed/*",
+				"/api/reservations/accommodations/*");
 		bean.setOrder(1);
 		return bean;
 	}

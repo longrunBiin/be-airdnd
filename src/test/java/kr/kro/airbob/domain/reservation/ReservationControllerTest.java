@@ -1,38 +1,40 @@
 package kr.kro.airbob.domain.reservation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.util.StdDateFormat;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import kr.kro.airbob.cursor.util.CursorDecoder;
-import kr.kro.airbob.domain.accommodation.interceptor.AccommodationAuthorizationInterceptor;
-import kr.kro.airbob.domain.common.BaseControllerDocumentationTest;
-import kr.kro.airbob.domain.reservation.dto.ReservationRequestDto;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-
-import java.time.LocalDate;
-
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
-import static org.springframework.restdocs.payload.PayloadDocumentation.*;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.util.StdDateFormat;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.time.LocalDate;
+import kr.kro.airbob.domain.auth.filter.SessionAuthFilter;
+import kr.kro.airbob.domain.common.BaseControllerDocumentationTest;
+import kr.kro.airbob.domain.reservation.dto.ReservationRequestDto;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
 @AutoConfigureRestDocs
 @WebMvcTest(ReservationController.class)
+@AutoConfigureMockMvc(addFilters = false)
 public class ReservationControllerTest extends BaseControllerDocumentationTest {
 
     @MockitoBean
@@ -66,11 +68,12 @@ public class ReservationControllerTest extends BaseControllerDocumentationTest {
                         .build();
 
 
-        given(reservationService.createReservation(eq(accommodationId), any()))
+        given(reservationService.createReservation(eq(accommodationId), any(), anyLong()))
                 .willReturn(createdReservationId);
 
         // when & then
         mockMvc.perform(post("/api/reservations/accommodations/{accommodationId}", accommodationId)
+                        .requestAttr("memberId", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(requestDto)))
                 .andExpect(status().isCreated())

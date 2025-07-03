@@ -6,11 +6,8 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 
 import kr.kro.airbob.domain.event.common.ApplyResult;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.RedisConnectionFailureException;
@@ -28,6 +25,7 @@ class EventServiceTest {
     private StringRedisTemplate redisTemplate;
 
     @Test
+    @DisplayName("레디스 요청이 실패한 경우 서킷브레이커로 인해 fallback 메소드가 실행된다")
     void circuitBreaker_opens_after_consecutive_failures() {
         // given
         given(redisTemplate.execute(any(), anyList(), any(), any()))

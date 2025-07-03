@@ -40,25 +40,10 @@ public class EventController {
     }
 
     private ResponseEntity<String> returnResponseByApplyResult(Long eventId, ApplyResult applyResult) {
-        switch (applyResult) {
-            case SUCCESS -> {
-                return ResponseEntity.ok(SUCCESS.getMessage());
-            }
-            case DUPLICATE -> {
-                log.info("result : {}", applyResult.name());
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(DUPLICATE.getMessage());
-            }
-            case FULL -> {
-                log.info("result : {}", applyResult.name());
-                if (eventService.markEventFullIfAbsent(eventId)) {
-                    eventService.publishEventQueueIsFull(eventId);
-                }
-                return ResponseEntity.status(HttpStatus.GONE).body(FULL.getMessage());
-            }
-            default -> {
-                log.info("error : {}", applyResult.name());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(applyResult.getMessage());
-            }
+        if (applyResult == FULL && eventService.markEventFullIfAbsent(eventId)){
+            eventService.publishEventQueueIsFull(eventId);
         }
+
+        return applyResult.toResponse();
     }
 }

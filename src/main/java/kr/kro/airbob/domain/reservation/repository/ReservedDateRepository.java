@@ -15,7 +15,7 @@ public interface ReservedDateRepository extends JpaRepository<ReservedDate, Long
     @Query("SELECT r.reservedAt FROM ReservedDate r " +
             "WHERE r.accommodation.id = :accommodationId " +
             "AND r.reservedAt BETWEEN :checkIn AND :checkOut")
-    List<ReservedDate> findReservedDates(
+    List<LocalDate> findReservedDates(
             @Param("accommodationId") Long accommodationId,
             @Param("checkIn") LocalDate checkIn,
             @Param("checkOut") LocalDate checkOut);

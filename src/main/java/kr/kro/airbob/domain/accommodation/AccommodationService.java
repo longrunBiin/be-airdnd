@@ -22,6 +22,7 @@ import kr.kro.airbob.domain.accommodation.repository.AmenityRepository;
 import kr.kro.airbob.domain.accommodation.repository.OccupancyPolicyRepository;
 import kr.kro.airbob.domain.member.Member;
 import kr.kro.airbob.domain.member.MemberRepository;
+import kr.kro.airbob.domain.member.exception.MemberNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -40,9 +41,8 @@ public class AccommodationService {
 
     @Transactional
     public Long createAccommodation(CreateAccommodationDto request) {
-        //todo 커스텀 예외로 만들기
         Member member = memberRepository.findById(request.getHostId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+                .orElseThrow(MemberNotFoundException::new);
 
         OccupancyPolicy occupancyPolicy = OccupancyPolicy.createOccupancyPolicy(request.getOccupancyPolicyInfo());
             occupancyPolicyRepository.save(occupancyPolicy);

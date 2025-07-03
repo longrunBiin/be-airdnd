@@ -33,6 +33,7 @@ import kr.kro.airbob.domain.accommodation.repository.AmenityRepository;
 import kr.kro.airbob.domain.accommodation.repository.OccupancyPolicyRepository;
 import kr.kro.airbob.domain.member.Member;
 import kr.kro.airbob.domain.member.MemberRepository;
+import kr.kro.airbob.domain.member.exception.MemberNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -134,8 +135,8 @@ class AccommodationServiceTest {
 
         // when & then
         assertThatThrownBy(() -> accommodationService.createAccommodation(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("존재하지 않는 회원입니다.");
+                .isInstanceOf(MemberNotFoundException.class)
+                .hasMessage("존재하지 않는 사용자입니다.");
     }
 
 
