@@ -80,7 +80,7 @@ class EventServiceIntegrationTest {
 
     @BeforeEach
     void clearRedis() {
-        redisTemplate.delete(Arrays.asList("event:1:set", "event:1:queue"));
+        redisTemplate.delete(Arrays.asList("event:1:set", "event:1:zset"));
     }
 
     @Test
