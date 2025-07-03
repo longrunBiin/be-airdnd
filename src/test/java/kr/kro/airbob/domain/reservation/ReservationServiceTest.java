@@ -198,7 +198,7 @@ public class ReservationServiceTest {
 
         // when & then
         assertThrows(InvalidReservationDateException.class, () -> {
-            reservationService.createReservation(1L, dto, 1L);
+            reservationService.validReservationDates(dto);
         });
     }
 

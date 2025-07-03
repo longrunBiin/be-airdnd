@@ -25,6 +25,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -79,7 +80,7 @@ class EventServiceIntegrationTest {
 
     @BeforeEach
     void clearRedis() {
-        redisTemplate.delete(Arrays.asList("event:1:set", "event:1:queue"));
+        redisTemplate.delete(Arrays.asList("event:1:set", "event:1:zset"));
     }
 
     @Test
@@ -113,34 +114,31 @@ class EventServiceIntegrationTest {
         assertThat(duplicateCount).isEqualTo(threadCount - 1);
     }
 
-//    @Test
-//    @DisplayName("최대 인원 수를 초과한 요청이 와도 큐에는 최대 인원 수만 저장된다")
-//    void queueShouldNotExceedMaxParticipants() throws InterruptedException {
-//        // given
-//        Long eventId = 1L;
-//        int maxParticipants = 100;
-//        int requestCount = 150;
-//
-//        // when
-//        ExecutorService executor = Executors.newFixedThreadPool(20);
-//        CountDownLatch latch = new CountDownLatch(requestCount);
-//        for (int i = 0; i < requestCount; i++) {
-//            final long memberId = i + 1;
-//            executor.submit(() -> {
-//                eventService.applyToEvent(eventId, memberId, maxParticipants);
-//                latch.countDown();
-//            });
-//        }
-//
-//        latch.await();
-//
-//        // then
-//        List<String> queue = redisTemplate.opsForList().range("event:" + eventId + ":queue", 0, -1);
-//        Set<String> uniqueSet = new HashSet<>(queue); // 중복 제거
-//
-//        assertThat(queue.size()).isEqualTo(maxParticipants);
-//        assertThat(uniqueSet.size()).isEqualTo(maxParticipants); // 중복도 없음을 확인
-//    }
+    @Test
+    @DisplayName("최대 인원 수를 초과한 요청이 와도 zset에는 최대 인원 수만 저장된다")
+    void zsetShouldNotExceedMaxParticipants() throws InterruptedException {
+        // given
+        Long eventId = 1L;
+        int maxParticipants = 100;
+        int requestCount = 150;
+
+        // when
+        ExecutorService executor = Executors.newFixedThreadPool(20);
+        CountDownLatch latch = new CountDownLatch(requestCount);
+        for (int i = 0; i < requestCount; i++) {
+            final long memberId = i + 1;
+            executor.submit(() -> {
+                eventService.applyToEvent(eventId, memberId, maxParticipants);
+                latch.countDown();
+            });
+        }
+
+        latch.await();
+
+        // then
+        Set<String> members = redisTemplate.opsForZSet().range("event:" + eventId + ":zset", 0, -1);
+        assertThat(members.size()).isEqualTo(maxParticipants);
+    }
 
     @Test
     @DisplayName("선착순 인원에 들면 응모가 성공한다.")
