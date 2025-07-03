@@ -21,31 +21,37 @@ public class EventService {
 
     private final StringRedisTemplate redisTemplate;
     private final EventRepository eventRepository;
-
-    private final String APPLY_EVENT_SCRIPT = """
+    private static final String APPLY_EVENT_SCRIPT = """
         local memberId = ARGV[1]
         local maxQueueSize = tonumber(ARGV[2])
+        local ttlSeconds = tonumber(ARGV[3])
         
         local zsetKey = KEYS[1]
         local seqKey = KEYS[2]
         
+        -- 현재 큐 크기 조회
+        local currentSize = redis.call('ZCARD', zsetKey)
+        
+        -- 큐가 꽉 찼으면 'full' 반환
+        if currentSize >= maxQueueSize then
+            return "full"
+        end
+        
         -- 순번 증가 (score로 사용)
         local score = redis.call('INCR', seqKey)
         
-        -- 추가
+        -- 중복 멤버가 아니면 추가
         local added = redis.call('ZADD', zsetKey, 'NX', score, memberId)
         if added == 0 then
             return "duplicate"
         end
         
-        -- 순위 확인
-        local rank = redis.call('ZRANK', zsetKey, memberId)
-        if rank >= maxQueueSize then
-            return "full"
-        end
+        -- TTL 설정
+        redis.call('EXPIRE', zsetKey, ttlSeconds)
         
         return "success"
     """;
+
     @Transactional
     @CircuitBreaker(name = "redisEventQueue", fallbackMethod = "fallback")
     public ApplyResult applyToEvent(Long eventId, Long memberId, int maxParticipants) {
@@ -56,21 +62,21 @@ public class EventService {
         String zsetKey = "event:" + eventId + ":zset";
         String seqKey = "event:" + eventId + ":seq";
 
+
         String result = redisTemplate.execute(
                 script,
                 Arrays.asList(zsetKey, seqKey),
                 String.valueOf(memberId),
-                String.valueOf(maxParticipants)
+                String.valueOf(maxParticipants),
+                String.valueOf(300)
         );
-
-
-        long ttlSeconds = 300L;
-        redisTemplate.expire(zsetKey, Duration.ofSeconds(ttlSeconds));
 
         return ApplyResult.valueOf(result.toUpperCase());
     }
 
     private ApplyResult fallback(Throwable t) {
+        log.info(t.getMessage());
+        log.info(String.valueOf(t.getCause()));
         return ApplyResult.ERROR;
     }
     @Cacheable(value = "eventMaxParticipantsCache", key = "'event:' + #eventId + ':maxParticipants'")

@@ -19,4 +19,15 @@ public enum ApplyResult {
     public ResponseEntity<String> toResponse() {
         return ResponseEntity.status(status).body(message);
     }
+
+    public static ApplyResult from(String raw) {
+        if (raw == null) return ERROR;
+
+        return switch (raw.trim().toLowerCase()) {
+            case "success" -> SUCCESS;
+            case "duplicate" -> DUPLICATE;
+            case "full" -> FULL;
+            default -> ERROR;
+        };
+    }
 }
