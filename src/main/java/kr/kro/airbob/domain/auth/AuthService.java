@@ -3,6 +3,7 @@ package kr.kro.airbob.domain.auth;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
+import kr.kro.airbob.domain.auth.dto.MemberSessionDto;
 import kr.kro.airbob.domain.auth.exception.InvalidPasswordException;
 import kr.kro.airbob.domain.auth.exception.NotEqualHostException;
 import kr.kro.airbob.domain.member.Member;
@@ -18,10 +19,9 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
     private final MemberRepository memberRepository;
-    private final RedisTemplate<String, Object> redisTemplate;
     private final SessionRedisRepository sessionRedisRepository;
 
-    public String login(String email, String password) {
+    public MemberSessionDto login(String email, String password) {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(MemberNotFoundException::new);
 
@@ -32,7 +32,7 @@ public class AuthService {
         String sessionId = UUID.randomUUID().toString();
         sessionRedisRepository.saveSession(sessionId, member.getId());
 
-        return sessionId;
+        return new MemberSessionDto(sessionId, member.getId(), member.getNickname());
     }
 
     public void logout(String sessionId) {
@@ -47,7 +47,4 @@ public class AuthService {
             throw new NotEqualHostException();
         }
     }
-
-
-
 }
