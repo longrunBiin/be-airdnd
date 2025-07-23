@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import kr.kro.airbob.common.cache.annotaion.RedisListCacheable;
 import kr.kro.airbob.domain.accommodation.common.AmenityType;
 import kr.kro.airbob.domain.accommodation.dto.AccommodationRequest;
 import kr.kro.airbob.domain.accommodation.dto.AccommodationRequest.AccommodationSearchConditionDto;
@@ -15,6 +16,7 @@ import kr.kro.airbob.domain.accommodation.entity.AccommodationAmenity;
 import kr.kro.airbob.domain.accommodation.entity.Address;
 import kr.kro.airbob.domain.accommodation.entity.Amenity;
 import kr.kro.airbob.domain.accommodation.entity.OccupancyPolicy;
+import kr.kro.airbob.domain.accommodation.event.AccommodationCreatedEvent;
 import kr.kro.airbob.domain.accommodation.repository.AccommodationAmenityRepository;
 import kr.kro.airbob.domain.accommodation.repository.AccommodationRepository;
 import kr.kro.airbob.domain.accommodation.repository.AddressRepository;
@@ -24,6 +26,7 @@ import kr.kro.airbob.domain.member.Member;
 import kr.kro.airbob.domain.member.MemberRepository;
 import kr.kro.airbob.domain.member.exception.MemberNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +41,7 @@ public class AccommodationService {
     private final AccommodationAmenityRepository accommodationAmenityRepository;
     private final OccupancyPolicyRepository occupancyPolicyRepository;
     private final AddressRepository addressRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public Long createAccommodation(CreateAccommodationDto request) {
@@ -58,7 +62,18 @@ public class AccommodationService {
             saveValidAmenities(request.getAmenityInfos(), savedAccommodation);
         }
 
+        publishCreateAccommodationEvent(accommodation);
+
         return savedAccommodation.getId();
+    }
+
+    private void publishCreateAccommodationEvent(Accommodation accommodation) {
+        eventPublisher.publishEvent(AccommodationCreatedEvent.builder()
+                .name(accommodation.getName())
+                .thumbnailUrl(accommodation.getThumbnailUrl())
+                .pricePerNight(accommodation.getBasePrice())
+                .maxOccupancy(accommodation.getOccupancyPolicy().getMaxOccupancy())
+                .build());
     }
 
     private void saveValidAmenities(List<AmenityInfo> request, Accommodation savedAccommodation) {
@@ -128,6 +143,10 @@ public class AccommodationService {
         accommodationRepository.delete(accommodation);
     }
 
+    @RedisListCacheable(
+            key = "recent:accommodations",
+            type = AccommodationSearchResponseDto.class
+    )
     public List<AccommodationSearchResponseDto> searchAccommodations(AccommodationSearchConditionDto request, Pageable pageable) {
         return accommodationRepository.searchByFilter(request, pageable);
     }
